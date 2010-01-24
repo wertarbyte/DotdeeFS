@@ -78,10 +78,21 @@ sub file_parts {
     
     my $dirname = $src.$file.".d/";
     opendir(my $dh, $dirname);
-    my @parts = sort grep { -f $_ } map { $dirname.$_ } readdir($dh);
+    my @parts = sort grep { -f $_ } map { $dirname.$_ } grep { ! skip_part($_) } readdir($dh);
     closedir $dh;
 
     return @parts;
+}
+
+sub skip_part {
+    my ($_) = @_;
+
+    # we do not include hidden files
+    return 1 if /^\./;
+    # or those with common backup names
+    return 1 if /\.(bak|tmp|dpkg-(old|dist|new|orig|tmp))$/;
+    return 1 if /~$/;
+    return 0;
 }
 
 sub concatenate_file {
