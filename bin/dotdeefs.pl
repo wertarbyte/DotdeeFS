@@ -20,23 +20,44 @@ my $dst = shift @ARGV;
 sub getattr {
     my ($file) = @_;
     my $item = $file;
-    my $dir2file = 0;
-    unless ($item eq "/") {
-        $item =~ s/\/$//;
-        $item .= '.d/';
-        $dir2file = 1;
+    if ($item eq "/") {
+        return stat($src);
+    } else {
+        return file_stats($file);
     }
-    my @orig = stat($src.$item);
-    my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)
-        = @orig;
-    my @new = @orig;
-    $new[3] = 1;
-    # convert directory mode to file mode
-    if ($dir2file) {
-        my $perms = ($mode & 07777);
-        $new[2] = ( S_IFREG | $perms );
+}
+
+sub file_stats {
+    my ($filename) = @_;
+    # we base the stat info on the directory info,
+    # but adjust values to the files contained
+    my @dir = stat($src.$filename.".d/");
+    #my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)
+    #    = @orig;
+    my @fstat = @dir;
+    # the virtual file retains the directory permissions
+    my $perms = ($fstat[2] & 07777);
+    $fstat[2] = ( S_IFREG | $perms );
+    # and has only one hardlink
+    $fstat[3] = 1;
+    
+    # now we calculate values dependant from the file parts
+    # e.g. the size
+    $fstat[7] = 0;
+    # and blocks
+    $fstat[12] = 0;
+    my @parts = file_parts($filename);
+    for my $p (@parts) {
+        my @pstat = stat($p);
+        # the filesize is the sum of the size of all parts
+        $fstat[7] += $pstat[7];
+        # atime/mtime/ctime are set to the maximum encountered
+        for my $i (8..10) {
+            $fstat[$i] = ($pstat[$i] > $fstat[$i] ? $pstat[$i] : $fstat[$i]);
+        }
+        $fstat[12] += $pstat[12];
     }
-    return @new;
+    return @fstat;
 }
 
 sub getdir {
