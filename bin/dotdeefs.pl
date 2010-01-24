@@ -6,6 +6,7 @@ use strict;
 use Fuse;
 use POSIX qw(ENOENT ENOSYS EEXIST EPERM O_RDONLY O_RDWR O_APPEND O_CREAT);
 use Fcntl qw(:mode);
+use IO::File;
 
 # data source directory
 my $src = shift @ARGV;
@@ -48,9 +49,28 @@ sub getdir {
     return @files;
 }
 
+sub concatenate_file {
+    my ($file) = @_;
+    my $data = "";
+    my $dirname = $src.$file.".d/";
+    opendir(my $dh, $dirname);
+    my @parts = sort grep { -f $dirname.$_ } readdir($dh);
+    # read all parts and concatenate the data
+    for my $p (@parts) {
+        # read the complete file
+        local $/;
+        my $fh = new IO::File($dirname.$p, "r");
+        $data .= <$fh>; 
+        $fh->close();
+    }
+    closedir $dh;
+    return $data;
+}
+
 sub read {
-    my ($file, $requestedsize, $offset) = @_;
-    return "";
+    my ($file, $size, $offset) = @_;
+    my $data = concatenate_file($file);
+    return substr($data, $offset, $size);
 }
 
 Fuse::main(
