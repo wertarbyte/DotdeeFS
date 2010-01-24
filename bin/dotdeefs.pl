@@ -15,7 +15,6 @@ my $dst = shift @ARGV;
 
 sub getattr {
     my ($file) = @_;
-    print "getattr: $file\n";
     my $item = $file;
     my $dir2file = 0;
     unless ($item eq "/") {
@@ -79,5 +78,5 @@ Fuse::main(
     getdir      => \&getdir,
     read        => \&read,
     threaded    => 0,
-    debug       => 1
+    debug       => 0
 );
