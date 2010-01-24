@@ -52,21 +52,29 @@ sub getdir {
     return @files;
 }
 
+sub file_parts {
+    my ($file) = @_;
+    
+    my $dirname = $src.$file.".d/";
+    opendir(my $dh, $dirname);
+    my @parts = sort grep { -f $_ } map { $dirname.$_ } readdir($dh);
+    closedir $dh;
+
+    return @parts;
+}
+
 sub concatenate_file {
     my ($file) = @_;
     my $data = "";
-    my $dirname = $src.$file.".d/";
-    opendir(my $dh, $dirname);
-    my @parts = sort grep { -f $dirname.$_ } readdir($dh);
+    my @parts = file_parts($file);
     # read all parts and concatenate the data
     for my $p (@parts) {
         # read the complete file
         local $/;
-        my $fh = new IO::File($dirname.$p, "r");
+        my $fh = new IO::File($p, "r");
         $data .= <$fh>; 
         $fh->close();
     }
-    closedir $dh;
     return $data;
 }
 
