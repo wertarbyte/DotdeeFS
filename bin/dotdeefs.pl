@@ -1,6 +1,10 @@
 #!/usr/bin/perl
+#
+# DotdeeFS by Stefan Tomanek <stefan@pico.ruhr.de>
+#
+# converts directories of the format /foo.d/... into single files /foo
 
-package DotDeeFs;
+package DotdeeFS;
 
 use strict;
 use Fuse;
